@@ -17,14 +17,14 @@ from monai.inferers import sliding_window_inference
 from pathlib import Path
 from tqdm import tqdm
 
-from model.unet_diedre import UNet_SeteDecoders
-from predict_lung import LungModule
-from utils.general import pos_processamento, post_processing_dist_lung, post_processing_lung
-from utils.general import register_single, teste_pickle_by_image, process_images
-from utils.general import unified_img_reading, busca_path, salvaImageRebuilt, convert_to_nifti, remove_directories_if_exist, collect_images_verbose
-from utils.general import analyze_registration_quality, find_best_registration
-from utils.to_onehot import mask_to_onehot
-from utils.transform3D import CTHUClip
+from .model.unet_diedre import UNet_SeteDecoders
+from .predict_lung import LungModule
+from .utils.general import pos_processamento, post_processing_dist_lung, post_processing_lung
+from .utils.general import register_single, teste_pickle_by_image, process_images
+from .utils.general import unified_img_reading, busca_path, salvaImageRebuilt, convert_to_nifti, remove_directories_if_exist, collect_images_verbose
+from .utils.general import analyze_registration_quality, find_best_registration
+from .utils.to_onehot import mask_to_onehot
+from .utils.transform3D import CTHUClip
 
 HOME = os.getenv("HOME")
 TEMP_IMAGES = 'temp_images'

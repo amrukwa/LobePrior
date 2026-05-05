@@ -16,12 +16,12 @@ from matplotlib import pyplot as plt
 from monai.inferers import sliding_window_inference
 from pathlib import Path
 
-from model.unet_diedre import UNet_SeisDecoders
-from utils.general import pos_processamento, post_processing_dist_lung, post_processing_lung
-from utils.general import unified_img_reading, busca_path, salvaImageRebuilt, convert_to_nifti, collect_images_verbose
-from utils.to_onehot import mask_to_onehot
-from utils.transform3D import CTHUClip
-from predict_lung  import LungModule
+from .model.unet_diedre import UNet_SeisDecoders
+from .utils.general import pos_processamento, post_processing_dist_lung, post_processing_lung
+from .utils.general import unified_img_reading, busca_path, salvaImageRebuilt, convert_to_nifti, collect_images_verbose
+from .utils.to_onehot import mask_to_onehot
+from .utils.transform3D import CTHUClip
+from .predict_lung  import LungModule
 
 HOME = os.getenv("HOME")
 TEMP_IMAGES = 'temp_images'

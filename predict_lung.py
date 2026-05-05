@@ -15,11 +15,11 @@ import pytorch_lightning as pl
 from monai.inferers import sliding_window_inference
 from pathlib import Path
 
-from utils.general import analyze_registration_quality, find_best_registration
-from utils.general import post_processing_lung
-from utils.general import unified_img_reading, busca_path, salvaImageRebuilt, convert_to_nifti, collect_images_verbose
-from model.unet_diedre import UNet_Diedre
-from utils.transform3D import CTHUClip
+from .utils.general import analyze_registration_quality, find_best_registration
+from .utils.general import post_processing_lung
+from .utils.general import unified_img_reading, busca_path, salvaImageRebuilt, convert_to_nifti, collect_images_verbose
+from .model.unet_diedre import UNet_Diedre
+from .utils.transform3D import CTHUClip
 
 HOME = os.getenv("HOME")
 TEMP_IMAGES = 'temp_images'

@@ -14,10 +14,11 @@ from dipy.align.imaffine import (
 from dipy.align.transforms import RigidTransform3D, TranslationTransform3D
 from scipy.ndimage import zoom
 
-from predict_decoders import LoberModule
-from predict_lung import LungModule
-from predict_normal import LoberModuleNormal
-from utils.general import (
+from .predict_decoders import LoberModule
+from .predict_lung import LungModule
+from .predict_normal import LoberModuleNormal
+from .utils import general as general_utils
+from .utils.general import (
     calculate_similarity_metrics,
     find_best_registration,
     find_files,
@@ -25,12 +26,13 @@ from utils.general import (
     post_processing_dist_lung,
     post_processing_lung,
 )
-from utils.to_onehot import mask_to_onehot
+from .utils.to_onehot import mask_to_onehot
 
 
 REPO_ROOT = Path(__file__).resolve().parent
 RAW_DATA_FOLDER = REPO_ROOT / "raw_images"
 WEIGHTS_DIR = REPO_ROOT / "weights"
+general_utils.RAW_DATA_FOLDER = str(RAW_DATA_FOLDER)
 
 
 def _require_cuda():
