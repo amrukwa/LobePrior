@@ -140,12 +140,13 @@ def _restore_to_original(
 def _register_group(image_xyz, group):
     fixed_path = RAW_DATA_FOLDER / "groups" / f"group_{group}.nii.gz"
     template_img = nib.load(str(fixed_path))
-    template_data = template_img.get_fdata()
-    template_affine = template_img.affine
-    moving_affine = np.eye(4, dtype=np.float32)
+    template_data = template_img.get_fdata().astype(np.float64)
+    template_affine = template_img.affine.astype(np.float64)
+    moving_data = image_xyz.astype(np.float64)
+    moving_affine = np.eye(4, dtype=np.float64)
 
     c_of_mass = transform_centers_of_mass(
-        template_data, template_affine, image_xyz, moving_affine
+        template_data, template_affine, moving_data, moving_affine
     )
 
     metric = MutualInformationMetric(32, None)
@@ -158,7 +159,7 @@ def _register_group(image_xyz, group):
 
     translation = affreg.optimize(
         template_data,
-        image_xyz,
+        moving_data,
         TranslationTransform3D(),
         None,
         template_affine,
@@ -167,14 +168,14 @@ def _register_group(image_xyz, group):
     )
     rigid = affreg.optimize(
         template_data,
-        image_xyz,
+        moving_data,
         RigidTransform3D(),
         None,
         template_affine,
         moving_affine,
         starting_affine=translation.affine,
     )
-    transformed = rigid.transform(image_xyz)
+    transformed = rigid.transform(moving_data)
     return transformed.astype(np.float32), rigid
 
 
