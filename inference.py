@@ -39,14 +39,12 @@ def _require_cuda():
 
 
 def _required_paths(use_prior):
-    required = [
-        WEIGHTS_DIR / "LightningLung.ckpt",
-        REPO_ROOT / "raw_images" / "images_npz",
-    ]
+    required = [WEIGHTS_DIR / "LightningLung.ckpt"]
     if use_prior:
         required.extend(
             [
                 WEIGHTS_DIR / "LightningLobes.ckpt",
+                RAW_DATA_FOLDER / "images_npz",
                 RAW_DATA_FOLDER / "groups",
                 RAW_DATA_FOLDER / "model_fusion",
             ]
@@ -69,6 +67,13 @@ def _flip_axes_from_direction(sitk_image):
     return np.where(directions[[0, 4, 8]][::-1] < 0)[0]
 
 
+def _needs_pil_correction(sitk_image):
+    directions = np.asarray(sitk_image.GetDirection())
+    if len(directions) != 9:
+        return False
+    return np.linalg.det(directions.reshape(3, 3)) < 0
+
+
 def _preprocess_image(sitk_image):
     original = sitk.GetArrayFromImage(sitk_image).astype(np.float32)
     flip_axes = _flip_axes_from_direction(sitk_image)
@@ -77,7 +82,7 @@ def _preprocess_image(sitk_image):
     isometric = zoom(canonical, spacing).astype(np.float32)
     isometric = np.clip(isometric, -1024.0, 600.0)
     isometric = (isometric + 1024.0) / 1624.0
-    return canonical, isometric, flip_axes
+    return canonical, isometric, flip_axes, _needs_pil_correction(sitk_image)
 
 
 def _resize_128(image_zyx):
@@ -114,11 +119,16 @@ def _resize_xyz_nearest(label_xyz, target_shape_xyz):
     return resized.squeeze().numpy()
 
 
-def _restore_to_original(label_zyx, rigid, canonical_shape_zyx, flip_axes):
+def _restore_to_original(
+    label_zyx, rigid, canonical_shape_zyx, flip_axes, needs_pil_correction
+):
     label_xyz = label_zyx.transpose(2, 1, 0).astype(np.float32)
     if rigid is not None:
         label_xyz = rigid.transform_inverse(label_xyz, interpolation="nearest")
     restored_xyz = _resize_xyz_nearest(label_xyz, canonical_shape_zyx[::-1])
+    if needs_pil_correction:
+        # Mirrors LobePrior's file-based rebuild_output() orientation fix.
+        restored_xyz = np.flip(restored_xyz, axis=1)
     restored_zyx = restored_xyz.transpose(2, 1, 0)
     if flip_axes.size:
         restored_zyx = np.flip(restored_zyx, flip_axes).copy()
@@ -246,7 +256,9 @@ def _load_normal_model():
 
 def predict_lobes_in_memory(sitk_image, use_prior=True):
     _assert_runtime_assets(use_prior)
-    canonical, isometric_zyx, flip_axes = _preprocess_image(sitk_image)
+    canonical, isometric_zyx, flip_axes, needs_pil_correction = _preprocess_image(
+        sitk_image
+    )
 
     lung_model = _load_lung_model()
 
@@ -274,6 +286,7 @@ def predict_lobes_in_memory(sitk_image, use_prior=True):
             registered_by_group[best_group]["rigid"],
             canonical.shape,
             flip_axes,
+            needs_pil_correction,
         )
     else:
         sample = _build_normal_sample(isometric_zyx)
@@ -285,7 +298,9 @@ def predict_lobes_in_memory(sitk_image, use_prior=True):
             output_lobes, _ = lobe_model.test_step(sample)
 
         labels = _postprocess_normal(output_lobes, lung)
-        restored = _restore_to_original(labels, None, canonical.shape, flip_axes)
+        restored = _restore_to_original(
+            labels, None, canonical.shape, flip_axes, needs_pil_correction
+        )
 
     sitk_lobes = sitk.GetImageFromArray(restored)
     sitk_lobes.CopyInformation(sitk_image)
